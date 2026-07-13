@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { S, focusInput, blurInput } from "@/lib/ui"
+import { toE164 } from "@/lib/reviewLink"
 
 export default function SettingsPage() {
   const [businessName, setBusinessName] = useState("")
@@ -41,15 +42,21 @@ export default function SettingsPage() {
     const supabase = createSupabaseBrowserClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    // Normalize to E.164 so it always matches the "From" number Twilio sends
+    // on the SMS-in webhook — otherwise editing this field here could silently
+    // break the "text a number to trigger a send" flow.
+    const normalizedPhone = toE164(ownerPhone)
+
     await supabase
       .from("businesses")
       .update({
         business_name: businessName,
         google_place_id: placeId,
-        owner_phone: ownerPhone,
+        owner_phone: normalizedPhone,
         message_template: template,
       })
       .eq("auth_user_id", user.id)
+    setOwnerPhone(normalizedPhone)
     setSaving(false)
     setSaved(true)
   }
