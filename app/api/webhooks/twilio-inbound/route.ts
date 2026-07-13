@@ -43,8 +43,9 @@ export async function POST(req: NextRequest) {
     return new NextResponse("", { status: 200 })
   }
 
-  // Expect "<10-digit phone> <optional name>"
-  const match = bodyText.match(/(\+?1?\d{10})\s*(.*)/)
+  // Expect "<phone number> <optional name>" — accept common formats people
+  // actually type: "7206566001", "720-656-6001", "(720) 656-6001", "+1 720.656.6001"
+  const match = bodyText.match(/(\+?1?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})\s*(.*)/)
   if (!match) {
     await reply("Couldn't find a phone number in that text. Send it like: 5551234567 Mike")
     return new NextResponse("", { status: 200 })
