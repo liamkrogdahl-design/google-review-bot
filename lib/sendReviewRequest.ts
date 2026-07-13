@@ -46,7 +46,10 @@ export async function sendReviewRequest({
 
   if (insertErr || !reqRow) throw new Error(insertErr?.message || "Failed to create request")
 
-  const trackedLink = `${process.env.NEXT_PUBLIC_APP_URL}/r/${reqRow.id}`
+  // Strip any trailing slash so this never produces a double-slash path like
+  // "https://x.vercel.app//r/uuid", which Next's router would fail to match.
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "")
+  const trackedLink = `${appUrl}/r/${reqRow.id}`
   const body = fillTemplate(biz.message_template, {
     name: customerName,
     business: biz.business_name,
