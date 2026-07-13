@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { client } from "@/lib/twilioClient"
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 import { validateTwilioSignature } from "@/lib/twilioValidate"
-import { sendReviewRequest } from "@/app/api/send-review-request/route"
+import { sendReviewRequest } from "@/lib/sendReviewRequest"
 import { toE164 } from "@/lib/reviewLink"
 
 // SMS-in trigger: the business owner texts their own dashboard number with

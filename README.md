@@ -52,8 +52,10 @@ https://developers.google.com/maps/documentation/places/web-service/place-id
 - `lib/supabaseAdmin.ts` uses the service role key and bypasses RLS — used by API routes
   that act across businesses (send, redirect, inbound webhook). The dashboard pages
   themselves use the regular browser/server clients with RLS enforced.
-- `app/api/send-review-request/route.ts` exports `sendReviewRequest()`, which is reused
-  by both the dashboard form and the SMS-in webhook — one code path, two triggers.
+- `lib/sendReviewRequest.ts` holds the shared send logic, reused by both the dashboard
+  form's API route and the SMS-in webhook — one code path, two triggers. It lives in
+  `lib/`, not a `route.ts` file, because Next.js only allows route files to export
+  HTTP method handlers (GET/POST/etc.), not arbitrary helper functions.
 - `app/r/[requestId]/route.ts` is the only link ever sent to a customer. Never send the
   raw Google URL directly — routing through this lets you measure click-through.
 
