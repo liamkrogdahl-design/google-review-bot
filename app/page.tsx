@@ -11,11 +11,14 @@ export default function HomePage() {
           <p style={S.sub}>
             Text your customer after every job. They tap one link, land straight in your Google review box.
           </p>
-          <a href="/login" style={{ ...S.btn, textDecoration: "none", display: "block", textAlign: "center" }}>
-            Sign in →
+          <a href="/signup" style={{ ...S.btn, textDecoration: "none", display: "block", textAlign: "center" }}>
+            Get started →
           </a>
         </div>
       </div>
+      <p style={{ fontSize: "0.8rem", color: "#52525b", marginTop: "1.25rem", textAlign: "center" }}>
+        Already have an account? <a href="/login" style={{ color: "#3b82f6", textDecoration: "none" }}>Sign in</a>
+      </p>
     </main>
   )
 }

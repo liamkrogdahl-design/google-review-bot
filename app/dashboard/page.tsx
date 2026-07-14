@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const db = getSupabaseAdmin()
   const { data: biz } = await db
     .from("businesses")
-    .select("id, business_name, google_place_id")
+    .select("id, business_name, google_place_id, twilio_number")
     .eq("auth_user_id", user.id)
     .single()
 
@@ -47,6 +47,12 @@ export default async function DashboardPage() {
               <a href="/dashboard/send" style={{ ...S.btn, textDecoration: "none", display: "inline-block", width: "auto", marginTop: 0 }}>Send request →</a>
             </div>
           </div>
+
+          {!biz?.twilio_number && (
+            <div style={{ ...S.error, marginBottom: "1.25rem" }}>
+              Your dedicated texting number is still being set up — check back shortly, or contact support if it's been a while.
+            </div>
+          )}
 
           {!biz?.google_place_id && (
             <div style={{ ...S.error, marginBottom: "1.25rem" }}>

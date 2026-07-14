@@ -33,13 +33,25 @@ note at the bottom on why v2 needs to be built carefully (FTC review-gating rule
    `https://your-app.vercel.app/api/webhooks/twilio-inbound`.
 5. `npm run dev`
 
-## Signup flow (not built yet)
+## Signup flow
 
-There's no `/signup` page yet — for the first few customers, create their `businesses` row
-manually in Supabase (set `auth_user_id`, `business_name`, `owner_phone`,
-`google_place_id`, `twilio_number`) and send them a password-set link via Supabase auth.
-Build a real signup + Stripe Checkout flow once you've validated the manual-onboarding
-version with a few customers — same order RingBack likely followed.
+`/signup` creates the Supabase auth user, inserts the `businesses` row, and automatically
+purchases a dedicated Twilio number for the new business (`app/api/signup/route.ts`).
+
+Important: the auto-purchase step spends real money every time someone signs up
+(~$1/month per number, billed to whatever card is on the Twilio account). It uses the same
+Twilio account as RingBack (that's just an account-level credential, shared on purpose),
+but it can never touch or modify any existing number — the code only ever calls
+`availablePhoneNumbers.list()` (read-only search) and `incomingPhoneNumbers.create()` (buys
+a brand new number resource), never `.list()`/`.update()` on numbers that already exist. So
+even sharing the account, there's no code path that can reach RingBack's numbers.
+
+If number provisioning fails (no inventory, account restriction, API error), signup still
+succeeds — the business just has `twilio_number = null` until it's set manually, and the
+dashboard shows a "still being set up" banner so it's visible rather than silently broken.
+
+There's still no Stripe Checkout wired to signup — right now anyone can create a free
+account. Add a Checkout step before/after `/api/signup` once you're ready to charge.
 
 ## Getting a Google Place ID
 
@@ -75,10 +87,14 @@ the rating value before deciding what to send.
 
 ## Known gaps in this scaffold
 
-- No signup page (see above) — needed before self-serve growth.
-- No Stripe Checkout / webhook for provisioning a business on payment — only the RingBack
-  pattern for canceling a subscription is included (`app/api/stripe/cancel`).
-- No automated Twilio number purchase per business — currently manual in the Twilio
-  console per new customer.
+- No Stripe Checkout / webhook for provisioning a business on payment — signup is free
+  right now, and only the RingBack pattern for canceling a subscription is included
+  (`app/api/stripe/cancel`).
+- No auto-reply on the per-business outbound number — if a customer replies to their
+  review-request text, nothing happens (no webhook is configured on that number). Fine for
+  v1, but a nice follow-up once volume is real.
 - A2P 10DLC registration isn't code — it's a Twilio console/compliance step, budget
   several days to a couple weeks for carrier approval before relying on deliverability.
+  This applies per number, including every auto-purchased one — worth checking whether
+  newly purchased numbers inherit your account-level registration automatically or need
+  each one added individually, since that affects real deliverability at scale.

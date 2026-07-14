@@ -55,6 +55,10 @@ function LoginForm() {
           </form>
         </div>
       </div>
+
+      <p style={{ fontSize: "0.8rem", color: "#52525b", marginTop: "1.25rem", textAlign: "center" }}>
+        Don't have an account? <a href="/signup" style={{ color: "#3b82f6", textDecoration: "none" }}>Get started</a>
+      </p>
     </main>
   )
 }
