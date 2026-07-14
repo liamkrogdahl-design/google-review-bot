@@ -54,6 +54,18 @@ export default async function DashboardPage() {
             </div>
           )}
 
+          {biz?.twilio_number && process.env.TWILIO_INBOUND_TRIGGER_NUMBER && (
+            <div style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "10px", padding: "1rem 1.1rem", marginBottom: "1.25rem" }}>
+              <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#93c5fd", marginBottom: "0.3rem" }}>
+                How to send a request without opening this page
+              </p>
+              <p style={{ fontSize: "0.82rem", color: "#a1a1aa" }}>
+                Text a customer's number to <strong style={{ color: "#fff" }}>{process.env.TWILIO_INBOUND_TRIGGER_NUMBER}</strong> — e.g. &quot;5551234567 Mike&quot; — and we&apos;ll send them a review request automatically.
+                Their review request text will come from your dedicated number, <strong style={{ color: "#fff" }}>{biz.twilio_number}</strong>.
+              </p>
+            </div>
+          )}
+
           {!biz?.google_place_id && (
             <div style={{ ...S.error, marginBottom: "1.25rem" }}>
               No Google Place ID set — review requests won&apos;t work until you add one in Settings.
