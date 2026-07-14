@@ -12,7 +12,7 @@ export default function SignupPage() {
   const [ownerPhone, setOwnerPhone] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [result, setResult] = useState<{ hasSession: boolean; numberProvisioned: boolean } | null>(null)
+  const [result, setResult] = useState<{ hasSession: boolean } | null>(null)
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -51,9 +51,8 @@ export default function SignupPage() {
           <div style={S.body}>
             <h2 style={S.h2}>Check your email</h2>
             <p style={S.sub}>
-              Confirm your account, then sign in. {result.numberProvisioned
-                ? "Your dedicated number is already set up."
-                : "Your dedicated number is still being set up — check back shortly, or ping support if it's been a while."}
+              Confirm your account, then sign in. Your dedicated texting number is being set up in the
+              background — it'll show up on your dashboard within a minute or two.
             </p>
             <a href="/login" style={{ ...S.btn, textDecoration: "none", display: "block", textAlign: "center" }}>
               Go to sign in →

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { client } from "@/lib/twilioClient"
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -90,17 +90,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
-  // Provision the dedicated outbound number in the background-ish — we still
-  // await it so we can report status, but signup itself already succeeded
-  // above regardless of whether this part works.
-  const twilioNumber = await provisionTwilioNumber(businessName, normalizedOwnerPhone)
-  if (twilioNumber) {
-    await db.from("businesses").update({ twilio_number: twilioNumber }).eq("auth_user_id", userId)
-  }
+  // Respond right away instead of making the customer wait on Twilio — number
+  // search + purchase is two sequential external API calls, which on a slow
+  // network could push past Vercel's serverless function time limit (10s on
+  // the Hobby plan) and fail the whole signup even though the account itself
+  // was already created successfully. `after()` runs this once the response
+  // has been sent, so a slow or flaky Twilio call can never break signup.
+  // The dashboard already shows a "still being set up" banner until this
+  // finishes, so this is always safe to defer.
+  after(async () => {
+    const twilioNumber = await provisionTwilioNumber(businessName, normalizedOwnerPhone)
+    if (twilioNumber) {
+      await db.from("businesses").update({ twilio_number: twilioNumber }).eq("auth_user_id", userId)
+    }
+  })
 
   return NextResponse.json({
     ok: true,
     hasSession: !!signUpData.session,
-    numberProvisioned: !!twilioNumber,
   })
 }
