@@ -3,6 +3,12 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 import { redirect } from "next/navigation"
 import { S } from "@/lib/ui"
 
+function statusColor(status: string): string {
+  if (status === "delivered") return "#4ade80"
+  if (status === "failed" || status === "undelivered") return "#f87171"
+  return "#a1a1aa" // queued, sent, or anything else in transit
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,6 +49,7 @@ export default async function DashboardPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
+              <a href="/dashboard/billing" style={{ ...S.ghostBtn, textDecoration: "none", display: "inline-block" }}>Billing</a>
               <a href="/dashboard/settings" style={{ ...S.ghostBtn, textDecoration: "none", display: "inline-block" }}>Settings</a>
               <a href="/dashboard/send" style={{ ...S.btn, textDecoration: "none", display: "inline-block", width: "auto", marginTop: 0 }}>Send request →</a>
             </div>
@@ -88,7 +95,7 @@ export default async function DashboardPage() {
                   <p style={{ fontSize: "0.78rem", color: "#71717a" }}>{r.customer_phone}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: "0.78rem", color: r.status === "failed" ? "#f87171" : "#a1a1aa", textTransform: "capitalize" }}>{r.status}</p>
+                  <p style={{ fontSize: "0.78rem", color: statusColor(r.status), textTransform: "capitalize" }}>{r.status}</p>
                   <p style={{ fontSize: "0.72rem", color: r.review_link_clicked_at ? "#4ade80" : "#3f3f46" }}>
                     {r.review_link_clicked_at ? "✓ clicked" : "not clicked"}
                   </p>

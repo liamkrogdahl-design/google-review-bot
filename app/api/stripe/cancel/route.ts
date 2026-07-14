@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import Stripe from "stripe"
+import { stripe } from "@/lib/stripeClient"
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
@@ -23,8 +23,6 @@ export async function POST(req: NextRequest) {
   if (!biz?.stripe_subscription_id) {
     return NextResponse.json({ error: "No subscription found" }, { status: 404 })
   }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-06-24.dahlia" })
 
   await stripe.subscriptions.update(biz.stripe_subscription_id, {
     cancel_at_period_end: true,

@@ -57,10 +57,14 @@ export async function sendReviewRequest({
   })
 
   try {
+    // Strip trailing slash here too — same reasoning as trackedLink above.
+    const statusCallback = appUrl ? `${appUrl}/api/webhooks/twilio-status` : undefined
+
     const msg = await client.messages.create({
       to: toPhone,
       from: biz.twilio_number,
       body,
+      ...(statusCallback ? { statusCallback } : {}),
     })
 
     await db

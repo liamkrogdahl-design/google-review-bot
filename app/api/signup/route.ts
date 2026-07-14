@@ -49,12 +49,47 @@ async function provisionTwilioNumber(businessName: string, ownerPhone: string): 
   }
 }
 
+// Signups spend real money automatically (Twilio number purchase), so cap how
+// many can come from one IP per hour before we ever touch Supabase or Twilio.
+// This is deliberately simple (no external rate-limit service) — a table plus
+// a count query is enough to stop runaway bot/abuse spend without adding
+// infrastructure. Legitimate users signing up once will never hit this.
+const SIGNUP_LIMIT_PER_IP = 3
+const SIGNUP_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for")
+  if (forwarded) return forwarded.split(",")[0].trim()
+  return req.headers.get("x-real-ip") || "unknown"
+}
+
 export async function POST(req: NextRequest) {
   const { businessName, email, password, ownerPhone } = await req.json()
 
   if (!businessName || !email || !password || !ownerPhone) {
     return NextResponse.json({ error: "All fields are required" }, { status: 400 })
   }
+
+  const ip = getClientIp(req)
+  const rateLimitDb = getSupabaseAdmin()
+  const windowStart = new Date(Date.now() - SIGNUP_LIMIT_WINDOW_MS).toISOString()
+
+  const { count } = await rateLimitDb
+    .from("signup_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", windowStart)
+
+  if ((count ?? 0) >= SIGNUP_LIMIT_PER_IP) {
+    return NextResponse.json(
+      { error: "Too many signup attempts from this connection. Please try again in an hour." },
+      { status: 429 }
+    )
+  }
+
+  // Record this attempt before doing anything else, so concurrent/rapid
+  // requests from the same IP are still counted correctly.
+  await rateLimitDb.from("signup_attempts").insert({ ip })
 
   const supabase = await createSupabaseServerClient()
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -102,6 +137,18 @@ export async function POST(req: NextRequest) {
     const twilioNumber = await provisionTwilioNumber(businessName, normalizedOwnerPhone)
     if (twilioNumber) {
       await db.from("businesses").update({ twilio_number: twilioNumber }).eq("auth_user_id", userId)
+    } else if (process.env.ADMIN_ALERT_PHONE && process.env.TWILIO_INBOUND_TRIGGER_NUMBER) {
+      // Provisioning failed silently otherwise — nobody would know a real
+      // customer is stuck without a working number until they complain.
+      try {
+        await client.messages.create({
+          to: process.env.ADMIN_ALERT_PHONE,
+          from: process.env.TWILIO_INBOUND_TRIGGER_NUMBER,
+          body: `ReviewPing: Twilio number provisioning FAILED for "${businessName}" (${email}). Needs a manual number assigned.`,
+        })
+      } catch (e) {
+        console.error("ADMIN ALERT SMS FAILED", e)
+      }
     }
   })
 
