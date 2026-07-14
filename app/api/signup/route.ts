@@ -57,7 +57,14 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createSupabaseServerClient()
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    // Pin the confirmation email's redirect explicitly rather than relying on
+    // whatever "Site URL" happens to be configured in the Supabase dashboard
+    // (which often still defaults to localhost on a fresh project).
+    options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/login` },
+  })
 
   if (signUpError || !signUpData.user) {
     return NextResponse.json({ error: signUpError?.message || "Signup failed" }, { status: 400 })
